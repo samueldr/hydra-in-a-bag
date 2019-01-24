@@ -1,0 +1,145 @@
+#!/usr/bin/env nix-shell
+#!nix-shell ./shell.nix -i bash
+
+#
+# THIS SHOULD ONLY BE USED FOR DEVELOPMENT PURPOSES
+# THIS IS NOT SECURE FOR EVEN ONE MOMENT.
+#
+
+set -e
+set -u
+PS4=" $ "
+set -x
+
+project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/" ; echo "$PWD")"
+database_dir="$project_dir/_db/database"
+server_dir="$project_dir/_db/server"
+
+pg_try() {
+    echo '\q' | psql postgres postgres
+}
+
+_postgresql_psql() {
+    echo "$@" | psql postgres postgres
+}
+
+postgresql_superuser_query() {
+    _postgresql_psql "$@"
+}
+
+export DBUSER=hydra
+export DBPASS=hydra
+export DBNAME=hydra
+
+postgresql_user() {
+    local DBUSER
+    DBUSER="$1"
+    shift
+    local DBPASS
+    DBPASS="$1"
+    shift
+    _postgresql_psql \
+        "create role $DBUSER with createdb login password '$DBPASS';"
+    if [[ "${1:-}" == "--superuser" ]]; then
+        _postgresql_psql \
+            "alter user $DBUSER with superuser;"
+        shift
+    else
+        _postgresql_psql \
+            "alter user $DBUSER with nosuperuser;"
+    fi
+}
+postgresql_db() {
+    local DBNAME
+    DBNAME="$1"
+    shift
+    local DBUSER
+    DBUSER="$1"
+    shift
+    _postgresql_psql \
+        "create database $DBNAME with owner = $DBUSER;"
+}
+
+pg_setup() {
+    postgresql_user "$DBUSER" "$DBPASS" --superuser
+    postgresql_db   "$DBNAME" "$DBUSER"
+    # Add additional setup here.
+    postgresql_superuser_query \
+"
+\\connect $DBNAME
+ALTER SCHEMA public   OWNER TO $DBUSER;
+"
+}
+
+rm -rf "$server_dir"
+mkdir -p "$server_dir"
+mkdir -p "$database_dir"
+
+_postgres() {
+	(
+	cd "$server_dir"
+	postgres -i -D "$database_dir" "$@"
+	)
+}
+
+_init() {
+	echo "Initializing the local database instance..."
+	initdb \
+		--encoding=UTF8 \
+		--locale="$LANG" \
+		--username=postgres \
+		"$database_dir"
+
+
+	_postgres &
+	echo "Sleeping for a bit... server needs a bit of time to start."
+	sleep 10
+
+	# Ensures we can connect
+	if pg_try; then
+		echo "PostgreSQL server is verified to be started."
+	else
+		echo "Failed to connect to local PostgreSQL server."
+		exit 2
+	fi
+
+	pg_setup
+
+	val="$?"
+	pkill postgres
+	
+	echo "Finished initializing the database... shutting it down..."
+	wait
+	echo -e '... done shutting down for initialization phase.\n\n\n'
+
+	return "$val"
+}
+
+_server() {
+	(
+	echo "Starting the database server..."
+	_postgres "$@"
+	)
+}
+
+# Using `trap` to always cleanup postgres
+_trap() {
+	if [ -e "$database_dir/postmaster.pid" ]; then
+		local POSTGRES_PID
+		POSTGRES_PID="$(head -n1 "$database_dir/postmaster.pid")"
+		echo "Killing leftover postgresql..."
+		kill "$POSTGRES_PID" || :
+	fi
+
+	wait
+}
+
+trap _trap EXIT
+
+if [ ! -e "$database_dir/pg_hba.conf" ]; then
+	_init
+fi
+
+_server "$@"
+
+# vim: ft=sh
