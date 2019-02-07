@@ -1,7 +1,7 @@
 `hydra-in-a-bag`
 ================
 
-This project aims to provide a one-click^W command solution to running a hydra
+This project aims to provide a one-click command solution to running a hydra
 instance **for development purposes**. Thus the name, this is not a
 ready-to-use production environment, but a only a convenience thing.
 
