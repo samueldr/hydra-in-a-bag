@@ -46,6 +46,12 @@ in
     cd $_pwd
     unset _pwd
 
+    source ${envfile}
+    export HYDRA_HOME
+    export HYDRA_DATA
+    export HYDRA_CONFIG
+    export HYDRA_DBI
+
     bagged-foreman() {
       env -i \
         LANG="en_GB.UTF-8" \
