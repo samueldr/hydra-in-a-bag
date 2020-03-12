@@ -78,7 +78,7 @@ mkdir -p "$database_dir"
 _postgres() {
 	(
 	cd "$server_dir"
-	postgres -i -D "$database_dir" "$@"
+	postgres -i -D "$database_dir" -k "$server_dir" "$@"
 	)
 }
 

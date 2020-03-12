@@ -25,6 +25,7 @@ let
   '';
 
   envfile = writeText "hydra-in-a-bag-env" ''
+    PGHOST=${bagDir}/_db/server
     HYDRA_HOME=${hydraDir}/src
     HYDRA_DATA=${bagDir}/_data
     HYDRA_CONFIG=${bagDir}/_data/hydra.conf
