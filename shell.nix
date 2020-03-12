@@ -46,6 +46,18 @@ in
     cd $_pwd
     unset _pwd
 
+    bagged-foreman() {
+      env -i \
+        LANG="en_GB.UTF-8" \
+        LOCALE_ARCHIVE="$LOCALE_ARCHIVE" \
+        LOGNAME="$LOGNAME" \
+        PATH="$PATH" \
+        PERL5LIB="$PERL5LIB" \
+        TERM="$TERM" \
+        \
+        foreman "$@" -e ${envfile} -d ${bagDir}
+    }
+
     make-hydra() {
       set -e
       (
@@ -67,12 +79,12 @@ in
     init-database() {
       make-hydra
       echo ":: Database initialisation"
-      foreman start -e ${envfile} -d ${bagDir} -f ${initProcfile}
+      bagged-foreman start -f ${initProcfile}
     }
     start() {
       make-hydra
       echo ":: Starting hydra"
-      exec foreman start -e ${envfile} -d ${bagDir} -f ${procfile}
+      bagged-foreman start -f ${procfile}
     }
   '';
 })
