@@ -1,3 +1,12 @@
+
+Starting with [hydra#759](https://github.com/NixOS/hydra/pull/759) a similar
+setup is now part of Hydra.
+
+Follow the instructions, [in the README](https://github.com/NixOS/hydra#executing-hydra-during-development)
+as a replacement to this now deprecated repository.
+
+* * *
+
 `hydra-in-a-bag`
 ================
 
